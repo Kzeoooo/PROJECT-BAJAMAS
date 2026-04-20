@@ -38,7 +38,7 @@
         transform: translateY(0);
     }
 
-    /* Staggered Delays (Biar munculnya gantian) */
+    /* Staggered Delays */
     .delay-100 {
         transition-delay: 0.1s;
     }
@@ -54,12 +54,25 @@
 
 <div class="space-y-16 pb-12">
 
+    @if(isset($apiStatus) && $apiStatus === 'failed' && ($currency ?? 'IDR') !== 'IDR')
+        <div class="mx-4 sm:mx-0 bg-red-100 border border-red-200 text-red-700 px-6 py-4 rounded-2xl">
+            {{ $errorMessage ?? 'Gagal mengambil data kurs dari API.' }}
+        </div>
+    @elseif(isset($currency) && $currency !== 'IDR')
+        <div class="mx-4 sm:mx-0 bg-green-100 border border-green-200 text-green-700 px-6 py-4 rounded-2xl">
+            Kurs berhasil diambil. Nilai tukar IDR ke {{ $currency }}: {{ $rate }}
+        </div>
+    @endif
+
     <div class="flex flex-col md:flex-row justify-between items-end gap-6 px-4 sm:px-0 reveal active">
         <div>
             <h2 class="text-4xl lg:text-5xl font-black text-theme-dark tracking-tight">
                 Hello, {{ Auth::user()->name }}! 🌿
             </h2>
             <p class="text-gray-500 mt-2 text-lg font-medium">Siap berkontribusi untuk bumi hari ini?</p>
+            <p class="text-sm font-semibold text-theme-main mt-2">
+                Mata uang aktif: {{ $currency ?? 'IDR' }}
+            </p>
         </div>
 
         <div class="w-full md:w-1/2 lg:w-1/3">
@@ -98,9 +111,20 @@
 
                     @if ($bannerProduct)
                         <h3 class="text-4xl md:text-6xl font-black leading-tight tracking-tighter">
-                            {{ $bannerProduct->name }}</h3>
-                        <p class="text-gray-300 text-lg max-w-md leading-relaxed">Produk pilihan minggu ini. Dibuat dari
-                            material daur ulang berkualitas tinggi.</p>
+                            {{ $bannerProduct->name }}
+                        </h3>
+                        <p class="text-gray-300 text-lg max-w-md leading-relaxed">
+                            Produk pilihan minggu ini. Dibuat dari material daur ulang berkualitas tinggi.
+                        </p>
+
+                        <div class="text-xl font-black text-theme-main">
+                            @if(($currency ?? 'IDR') === 'IDR')
+                                Rp {{ number_format($bannerProduct->price, 0, ',', '.') }}
+                            @else
+                                {{ $currency }} {{ number_format($bannerProduct->converted_price, 2) }}
+                            @endif
+                        </div>
+
                         <div class="pt-6">
                             <a href="{{ route('products.show', $bannerProduct->slug) }}"
                                 class="inline-flex items-center gap-3 bg-white text-theme-dark px-8 py-4 rounded-2xl font-bold hover:bg-theme-main hover:text-white transition-all transform hover:-translate-y-1 shadow-lg hover:shadow-theme-main/50">
@@ -112,10 +136,12 @@
                             </a>
                         </div>
                     @else
-                        <h3 class="text-4xl md:text-6xl font-black leading-tight tracking-tighter">Start Your<br>Green
-                            Journey.</h3>
-                        <p class="text-gray-300 text-lg max-w-md leading-relaxed">Temukan produk terbaik untuk memulai
-                            hidup minim sampah.</p>
+                        <h3 class="text-4xl md:text-6xl font-black leading-tight tracking-tighter">
+                            Start Your<br>Green Journey.
+                        </h3>
+                        <p class="text-gray-300 text-lg max-w-md leading-relaxed">
+                            Temukan produk terbaik untuk memulai hidup minim sampah.
+                        </p>
                         <div class="pt-6">
                             <a href="{{ route('products.index') }}"
                                 class="inline-flex items-center gap-3 bg-white text-theme-dark px-8 py-4 rounded-2xl font-bold hover:bg-theme-main hover:text-white transition-all transform hover:-translate-y-1 shadow-lg hover:shadow-theme-main/50">
@@ -128,6 +154,7 @@
                         </div>
                     @endif
                 </div>
+
                 <div
                     class="relative h-80 md:h-full min-h-[400px] flex items-center justify-center bg-gradient-to-br from-theme-main/20 to-transparent">
                     @if ($bannerProduct && $bannerProduct->image)
@@ -210,8 +237,8 @@
         <div class="flex items-center justify-between mb-8">
             <h4 class="text-2xl font-bold text-theme-dark">Explore Categories</h4>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <a href="{{ route('categories.show', 'kemasan-makanan') }}"
                 class="group relative overflow-hidden rounded-[2.5rem] h-80 border border-theme-soft hover:border-theme-main transition-all duration-500 hover:shadow-xl">
                 <div
@@ -227,10 +254,12 @@
                         </svg>
                     </div>
                     <h5 class="text-2xl font-black text-theme-dark mb-1 group-hover:text-theme-main transition-colors">
-                        Kemasan Makanan</h5>
+                        Kemasan Makanan
+                    </h5>
                     <p
                         class="text-xs font-bold text-gray-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500">
-                        View Collection &rarr;</p>
+                        View Collection &rarr;
+                    </p>
                 </div>
             </a>
 
@@ -249,10 +278,12 @@
                         </svg>
                     </div>
                     <h5 class="text-2xl font-black text-theme-dark mb-1 group-hover:text-theme-main transition-colors">
-                        Kemasan Minuman</h5>
+                        Kemasan Minuman
+                    </h5>
                     <p
                         class="text-xs font-bold text-gray-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500">
-                        View Collection &rarr;</p>
+                        View Collection &rarr;
+                    </p>
                 </div>
             </a>
 
@@ -270,14 +301,17 @@
                         </svg>
                     </div>
                     <h5 class="text-2xl font-black text-theme-dark mb-1 group-hover:text-theme-main transition-colors">
-                        Kemasan Pakaian</h5>
+                        Kemasan Pakaian
+                    </h5>
                     <p
                         class="text-xs font-bold text-gray-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500">
-                        View Collection &rarr;</p>
+                        View Collection &rarr;
+                    </p>
                 </div>
             </a>
         </div>
     </div>
+
     <div class="px-4 sm:px-0 reveal delay-300">
         <div class="flex items-center justify-between mb-8">
             <div>
@@ -285,23 +319,22 @@
                 <p class="text-gray-500 text-sm mt-1">Produk paling dicari minggu ini.</p>
             </div>
         </div>
+
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
             @foreach ($popularProducts as $product)
                 <a href="{{ route('products.show', $product->slug) }}"
                     class="card-zoom group bg-white border border-theme-soft rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-theme-main/10 hover:border-theme-main transition-all duration-300 relative flex flex-col h-full transform hover:-translate-y-2">
-                    <div
-                        class="aspect-square bg-gray-50 relative overflow-hidden p-4 flex items-center justify-center">
+                    <div class="aspect-square bg-gray-50 relative overflow-hidden p-4 flex items-center justify-center">
                         @if ($product->image)
                             <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}"
                                 class="w-full h-full object-contain">
                         @else
-                            <div
-                                class="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100 rounded-xl">
-                                ♻️</div>
+                            <div class="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100 rounded-xl">
+                                ♻️
+                            </div>
                         @endif
 
-                        <div
-                            class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <span
                                 class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-theme-dark hover:bg-theme-main hover:text-white transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -311,16 +344,26 @@
                             </span>
                         </div>
                     </div>
+
                     <div class="p-4 flex flex-col flex-grow">
                         <p class="text-[10px] font-black tracking-wider text-theme-main uppercase mb-1">
-                            {{ $product->category->name ?? 'Product' }}</p>
+                            {{ $product->category->name ?? 'Product' }}
+                        </p>
+
                         <h5
                             class="font-bold text-gray-800 text-sm mb-2 line-clamp-2 flex-grow group-hover:text-theme-dark transition-colors">
-                            {{ $product->name }}</h5>
+                            {{ $product->name }}
+                        </h5>
 
                         <div class="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
-                            <p class="text-base font-black text-theme-dark">Rp
-                                {{ number_format($product->price, 0, ',', '.') }}</p>
+                            <p class="text-base font-black text-theme-dark">
+                                @if(($currency ?? 'IDR') === 'IDR')
+                                    Rp {{ number_format($product->price, 0, ',', '.') }}
+                                @else
+                                    {{ $currency }} {{ number_format($product->converted_price, 2) }}
+                                @endif
+                            </p>
+
                             <div class="flex items-center text-yellow-400 text-xs">
                                 <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
                                     <path
@@ -354,6 +397,6 @@
         }
 
         window.addEventListener('scroll', revealOnScroll);
-        revealOnScroll(); // Trigger sekali pas load
+        revealOnScroll();
     });
 </script>

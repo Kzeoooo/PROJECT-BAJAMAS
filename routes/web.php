@@ -1,10 +1,21 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CurrencyController;
+use App\Http\Controllers\CurrencyDemoController;
+
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\OrderController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -18,34 +29,34 @@ Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{categorySlug}', [CategoryController::class, 'show'])->name('categories.show');
 
-use App\Http\Controllers\DashboardController;
-
+// Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+// Profile
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Admin product routes (use 'admin' middleware alias)
-Route::prefix('admin')->name('admin.')->middleware(['auth','admin'])->group(function () {
+// Admin routes
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::resource('products', AdminProductController::class)->except(['show']);
-    Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->except(['show']);
-    Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
-    Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
-    Route::get('orders/{order}', [\App\Http\Controllers\Admin\OrderController::class, 'show'])->name('orders.show');
-    Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+    Route::resource('categories', AdminCategoryController::class)->except(['show']);
+
+    Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+
+    Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+    Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
 });
 
-require __DIR__.'/auth.php';
+// Auth routes
+require __DIR__ . '/auth.php';
 
-// Cart & Checkout
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\CheckoutController;
-
+// Cart, checkout, user orders
 Route::middleware('auth')->group(function () {
     Route::get('cart', [CartController::class, 'index'])->name('cart.index');
     Route::post('cart/add', [CartController::class, 'add'])->name('cart.add');
@@ -55,7 +66,12 @@ Route::middleware('auth')->group(function () {
     Route::get('checkout', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
-    // Orders (my orders + receipt)
-    Route::get('orders', [\App\Http\Controllers\OrderController::class, 'index'])->name('orders.index');
-    Route::get('orders/{order}', [\App\Http\Controllers\OrderController::class, 'show'])->name('orders.show');
+    Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 });
+
+// Currency global
+Route::post('/set-currency', [CurrencyController::class, 'update'])->name('currency.update');
+
+// Demo API currency
+Route::get('/currency-demo', [CurrencyDemoController::class, 'index'])->name('currency.demo');

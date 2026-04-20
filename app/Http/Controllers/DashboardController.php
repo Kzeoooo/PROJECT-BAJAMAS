@@ -8,23 +8,21 @@ use App\Models\User;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Services\CurrencyService;
 
 class DashboardController extends Controller
 {
     /**
      * Menampilkan dashboard yang sesuai berdasarkan mode login (Admin/User).
-     * Sudah dilengkapi fitur Search dan Dynamic Cart Count.
+     * Sudah dilengkapi fitur Search, Dynamic Cart Count, dan Currency Global untuk user dashboard.
      */
-    public function index(Request $request): View
+    public function index(Request $request, CurrencyService $currencyService): View
     {
-        // Mengambil mode dari session
         $mode = $request->session()->get('login_as');
-        
-        // Mengambil kata kunci pencarian jika ada
         $search = $request->query('q');
 
         if ($mode === 'admin') {
-            // --- DATA UNTUK DASHBOARD ADMIN ---
+            // --- DASHBOARD ADMIN ---
             $data = [
                 'mode'             => $mode,
                 'totalProducts'    => Product::count(),
@@ -38,27 +36,37 @@ class DashboardController extends Controller
             return view('dashboard', $data);
 
         } else {
-            // --- DATA UNTUK DASHBOARD USER (BAJAMAS) ---
-            
-            // 1. Ambil semua kategori untuk filter menu
+            // --- DASHBOARD USER ---
+            $currency = $currencyService->getCurrentCurrency();
+
+            $result = $currencyService->getRate($currency);
+            $rate = $result['rate'];
+            $apiStatus = $result['success'] ? 'success' : 'failed';
+            $errorMessage = $result['message'];
+
             $categories = Category::select('id', 'name', 'slug')->get();
 
-            // 2. Query Produk Populer + Fitur Search
             $popularProducts = Product::with('category')
                 ->when($search, function ($query, $search) {
                     return $query->where('name', 'like', "%{$search}%")
                                  ->orWhere('description', 'like', "%{$search}%");
                 })
                 ->orderBy('created_at', 'desc')
-                ->take(10) // Kita ambil 10 agar tampilan lebih penuh
+                ->take(10)
                 ->get();
 
-            // 3. Banner Produk (Random)
+            foreach ($popularProducts as $product) {
+                $product->converted_price = $product->price * $rate;
+            }
+
             $bannerProduct = Product::inRandomOrder()->first();
 
-            // 4. Hitung jumlah item di keranjang dari Session (Dinamis)
+            if ($bannerProduct) {
+                $bannerProduct->converted_price = $bannerProduct->price * $rate;
+            }
+
             $cart = $request->session()->get('cart', []);
-            $cartCount = array_sum($cart); // Menjumlahkan semua quantity di keranjang
+            $cartCount = array_sum($cart);
 
             return view('dashboard', [
                 'mode'            => $mode,
@@ -66,7 +74,11 @@ class DashboardController extends Controller
                 'popularProducts' => $popularProducts,
                 'bannerProduct'   => $bannerProduct,
                 'cartCount'       => $cartCount,
-                'search'          => $search, // Dikirim balik agar input search tidak kosong setelah enter
+                'search'          => $search,
+                'currency'        => $currency,
+                'rate'            => $rate,
+                'apiStatus'       => $apiStatus,
+                'errorMessage'    => $errorMessage,
             ]);
         }
     }

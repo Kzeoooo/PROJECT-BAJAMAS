@@ -5,23 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Services\CurrencyService;
 
 class ProductController extends Controller
 {
     /**
-     * Tampilan utama produk dengan fitur pencarian dan filter.
+     * Tampilan utama produk dengan fitur pencarian, filter, dan konversi kurs.
      */
-    public function index(Request $request)
+    public function index(Request $request, CurrencyService $currencyService)
     {
-        // Gunakan Eager Loading 'category' untuk mencegah N+1 query
+        $currency = $currencyService->getCurrentCurrency();
+
         $query = Product::with('category')->latest();
 
-        // Pencarian Nama
         if ($request->filled('q')) {
             $query->where('name', 'like', '%' . $request->q . '%');
         }
 
-        // Filter Kategori (berdasarkan ID)
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
@@ -29,27 +29,54 @@ class ProductController extends Controller
         $products = $query->paginate(12)->appends($request->only('q', 'category_id'));
         $categories = Category::all();
 
-        return view('products.index', compact('products', 'categories'));
+        $result = $currencyService->getRate($currency);
+
+        $rate = $result['rate'];
+        $apiStatus = $result['success'] ? 'success' : 'failed';
+        $errorMessage = $result['message'];
+
+        foreach ($products as $product) {
+            $product->converted_price = $product->price * $rate;
+        }
+
+        return view('products.index', compact(
+            'products',
+            'categories',
+            'currency',
+            'rate',
+            'apiStatus',
+            'errorMessage'
+        ));
     }
 
     /**
-     * Menampilkan detail produk DAN produk terkait.
+     * Menampilkan detail produk dan produk terkait.
      */
-    public function show(Product $product)
+    public function show(Product $product, CurrencyService $currencyService)
     {
-        // 1. Load data kategori produk utama
+        $currency = $currencyService->getCurrentCurrency();
+
         $product->load('category');
 
-        // 2. Logic Backend Produk Terkait:
-        // Mencari produk dengan category_id yang sama, namun mengecualikan dirinya sendiri.
+        $result = $currencyService->getRate($currency);
+        $rate = $result['rate'];
+
+        $product->converted_price = $product->price * $rate;
+
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->latest()
             ->limit(4)
             ->get();
 
-        return view('products.show', compact('product', 'relatedProducts'));
+        foreach ($relatedProducts as $relatedProduct) {
+            $relatedProduct->converted_price = $relatedProduct->price * $rate;
+        }
+
+        return view('products.show', compact(
+            'product',
+            'relatedProducts',
+            'currency'
+        ));
     }
-
-
 }

@@ -1,6 +1,7 @@
 <nav x-data="{ open: false }" class="bg-white/80 backdrop-blur-md border-b border-theme-soft sticky top-0 z-50">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-20"> <div class="flex">
+        <div class="flex justify-between h-20">
+            <div class="flex">
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-theme-dark" />
@@ -11,6 +12,7 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-theme-dark hover:text-theme-main active:text-theme-main font-medium text-base">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
                     @if(Auth::user()->role === 'admin')
                         <x-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')" class="text-theme-dark hover:text-theme-main active:text-theme-main font-medium text-base">
                             {{ __('Manage Product') }}
@@ -39,10 +41,25 @@
             </div>
 
             @auth
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                {{-- Cart Section (Sintaks Tetap Sesuai Punya Lu) --}}
+            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-3">
+
+                <form method="POST" action="{{ route('currency.update') }}" class="flex items-center gap-2">
+                    @csrf
+                    <select name="currency"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl border border-theme-soft bg-white text-sm font-semibold text-theme-dark focus:border-theme-main focus:ring-0">
+
+                        @foreach($allowedCurrencies as $curr)
+                            <option value="{{ $curr }}" {{ $currentCurrency === $curr ? 'selected' : '' }}>
+                                {{ $curr }}
+                            </option>
+                        @endforeach
+
+                    </select>
+                </form>
+
                 @if(Auth::user()->role !== 'admin')
-                    <a href="{{ route('cart.index') }}" class="me-4 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-theme-dark bg-transparent hover:bg-theme-bg hover:text-theme-main transition-colors">
+                    <a href="{{ route('cart.index') }}" class="me-2 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-theme-dark bg-transparent hover:bg-theme-bg hover:text-theme-main transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 me-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -103,7 +120,21 @@
             </div>
             @else
             <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-4">
-                {{-- Search Bar for Guests --}}
+                <form method="POST" action="{{ route('currency.update') }}" class="flex items-center gap-2">
+                    @csrf
+                    <select
+                        name="currency"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl border border-theme-soft bg-white text-sm font-semibold text-theme-dark focus:border-theme-main focus:ring-0"
+                    >
+                        @foreach($allowedCurrencies as $curr)
+                            <option value="{{ $curr }}" {{ $currentCurrency === $curr ? 'selected' : '' }}>
+                                {{ $curr }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+
                 <form method="GET" action="{{ route('products.index') }}" class="me-4 flex items-center">
                     <input type="text" name="q" value="{{ request('q') }}" placeholder="Search products..."
                         class="w-48 px-3 py-2 text-sm border border-theme-soft rounded-l-lg focus:ring-theme-main focus:border-theme-main bg-white">
@@ -130,6 +161,27 @@
     </div>
 
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-white border-t border-theme-soft">
+        <div class="px-4 py-3 border-b border-theme-soft">
+            <form method="POST" action="{{ route('currency.update') }}" class="flex items-center gap-2">
+                @csrf
+                <label for="currency-mobile" class="text-sm font-semibold text-theme-dark whitespace-nowrap">
+                    Currency
+                </label>
+                <select
+                    name="currency"
+                    id="currency-mobile"
+                    onchange="this.form.submit()"
+                    class="flex-1 px-3 py-2 rounded-xl border border-theme-soft bg-white text-sm font-semibold text-theme-dark focus:border-theme-main focus:ring-0"
+                >
+                    @foreach($allowedCurrencies as $curr)
+                        <option value="{{ $curr }}" {{ $currentCurrency === $curr ? 'selected' : '' }}>
+                            {{ $curr }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-theme-dark border-theme-main bg-theme-bg/50">
                 {{ __('Dashboard') }}
@@ -143,32 +195,32 @@
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
             </div>
 
-        <div class="mt-3 space-y-1">
-            <x-responsive-nav-link :href="route('profile.edit')">
-                {{ __('Profile') }}
-            </x-responsive-nav-link>
+            <div class="mt-3 space-y-1">
+                <x-responsive-nav-link :href="route('profile.edit')">
+                    {{ __('Profile') }}
+                </x-responsive-nav-link>
 
-            @if(Auth::user()->role === 'admin')
-                <x-responsive-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')">
-                    {{ __('Manage Product') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.orders.index')" :active="request()->routeIs('admin.orders.*')">
-                    {{ __('Manage Orders') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
-                    {{ __('Manage Categories') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                    {{ __('Manage Users') }}
-                </x-responsive-nav-link>
-            @else
-                <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
-                    {{ __('Category') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
-                    {{ __('My Orders') }}
-                </x-responsive-nav-link>
-            @endif
+                @if(Auth::user()->role === 'admin')
+                    <x-responsive-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')">
+                        {{ __('Manage Product') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.orders.index')" :active="request()->routeIs('admin.orders.*')">
+                        {{ __('Manage Orders') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
+                        {{ __('Manage Categories') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('Manage Users') }}
+                    </x-responsive-nav-link>
+                @else
+                    <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
+                        {{ __('Category') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
+                        {{ __('My Orders') }}
+                    </x-responsive-nav-link>
+                @endif
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
